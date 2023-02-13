@@ -1,0 +1,13 @@
+[package]
+name = "proc-macro-util"
+version = "0.1.0"
+authors = ["Trey Lowerison"]
+edition = "2021"
+
+[dependencies]
+derivative = "2"
+derive_more = "0"
+prettyplease = "0"
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "1", default-features = false, features = ["clone-impls", "derive", "extra-traits", "parsing", "printing"] }
