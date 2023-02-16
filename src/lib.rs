@@ -25,19 +25,45 @@ macro_rules! ok_or_return_compile_error {
     };
 }
 
-pub fn get_data_struct_field_ident<'a>(
-    field_attr_name: &str,
-    data_struct: &'a syn::DataStruct,
-    derive_input: &syn::DeriveInput,
-) -> Result<(TokenStream2, &'a syn::Field, &'a syn::Attribute), Error> {
+/// Represents an attribute found on a struct which was matched
+/// for by its path. Includes additional context about where the
+/// attribute is found within the struct.
+#[derive(Clone, Debug)]
+pub struct AttributeMathchedField<'a> {
+    /// The entire attribute which was matched for based on its path.
+    pub attr: &'a syn::Attribute,
+    /// The field on which the matched attribute is found.
+    pub field: &'a syn::Field,
+    /// The token stream representation of the accessor to be used in dot notation for accessing this
+    /// matched field in its parent struct. Has type [`proc_macro2::TokenStream`] instead of
+    /// [`syn::Type`] in order to handle the case of unnamed fields, where the tokens are just an
+    /// index.
+    pub field_accessor: TokenStream2,
+}
+
+/// Finds a field attribute in a [`syn::DeriveInput`] matching the provided path.
+/// Will throw error if the provided AST is not a struct.
+pub fn find_field_attribute_in_struct<'a>(
+    attr_path: &str,
+    derive_input: &'a syn::DeriveInput,
+) -> Result<AttributeMathchedField<'a>, Error> {
+    let data_struct = match &derive_input.data {
+        syn::Data::Struct(data_struct) => data_struct,
+        _ => {
+            return Err(Error::new_spanned(
+                derive_input,
+                "{}::Context can only be derived on struct types",
+            ))
+        }
+    };
     let mut field_and_index: Option<(usize, &syn::Field, &syn::Attribute)> = None;
     for (index, field) in data_struct.fields.iter().enumerate() {
         for attr in &field.attrs {
-            if attr.path.is_ident(field_attr_name) {
+            if attr.path.is_ident(attr_path) {
                 if field_and_index.is_some() {
                     return Err(Error::new_spanned(
                         attr,
-                        format!("`#[{field_attr_name}]` attribute cannot be used more than once"),
+                        format!("`#[{attr_path}]` attribute cannot be used more than once"),
                     ));
                 } else {
                     field_and_index = Some((index, field, attr))
@@ -50,17 +76,21 @@ pub fn get_data_struct_field_ident<'a>(
         None => {
             return Err(Error::new_spanned(
                 derive_input,
-                format!("exactly one field must be marked with the `#[{field_attr_name}]` attribute"),
+                format!("exactly one field must be marked with the `#[{attr_path}]` attribute"),
             ))
         }
     };
 
-    let field_ident = match field.ident.as_ref() {
+    let field_accessor = match field.ident.as_ref() {
         Some(ident) => quote!(#ident),
         None => TokenStream::from_str(&format!("{field_index}")).unwrap().into(),
     };
 
-    Ok((field_ident, field, attr))
+    Ok(AttributeMathchedField {
+        attr,
+        field,
+        field_accessor,
+    })
 }
 
 pub fn is_param_exact_field_type(param: &syn::GenericParam, field: &syn::Field) -> bool {
