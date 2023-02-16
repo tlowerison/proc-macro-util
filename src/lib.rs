@@ -43,6 +43,7 @@ pub struct MatchedAttribute<'a> {
 
 /// Finds a field attribute in a [`syn::DeriveInput`] matching the provided path.
 /// Will throw error if the provided AST is not a struct.
+/// Expects there to be exactly one matching attribute in the struct
 pub fn find_field_attribute_in_struct<'a>(
     attr_path: &str,
     derive_input: &'a syn::DeriveInput,
@@ -91,6 +92,45 @@ pub fn find_field_attribute_in_struct<'a>(
         field,
         field_accessor,
     })
+}
+
+/// Finds all field attributes in a [`syn::DeriveInput`] matching the provided path.
+/// Will throw error if the provided AST is not a struct.
+pub fn find_field_attributes_in_struct<'a>(
+    attr_path: &str,
+    derive_input: &'a syn::DeriveInput,
+) -> Result<Vec<MatchedAttribute<'a>>, Error> {
+    let data_struct = match &derive_input.data {
+        syn::Data::Struct(data_struct) => data_struct,
+        _ => {
+            return Err(Error::new_spanned(
+                derive_input,
+                "{}::Context can only be derived on struct types",
+            ))
+        }
+    };
+    let mut fields_and_indices = Vec::<(usize, &syn::Field, &syn::Attribute)>::default();
+    for (index, field) in data_struct.fields.iter().enumerate() {
+        for attr in &field.attrs {
+            if attr.path.is_ident(attr_path) {
+                fields_and_indices.push((index, field, attr));
+            }
+        }
+    }
+    Ok(fields_and_indices
+        .into_iter()
+        .map(|(field_index, field, attr)| {
+            let field_accessor = match field.ident.as_ref() {
+                Some(ident) => quote!(#ident),
+                None => TokenStream::from_str(&format!("{field_index}")).unwrap().into(),
+            };
+            MatchedAttribute {
+                attr,
+                field,
+                field_accessor,
+            }
+        })
+        .collect())
 }
 
 pub fn is_param_exact_field_type(param: &syn::GenericParam, field: &syn::Field) -> bool {
