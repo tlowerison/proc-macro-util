@@ -50,12 +50,7 @@ pub fn find_field_attribute_in_struct<'a>(
 ) -> Result<MatchedAttribute<'a>, Error> {
     let data_struct = match &derive_input.data {
         syn::Data::Struct(data_struct) => data_struct,
-        _ => {
-            return Err(Error::new_spanned(
-                derive_input,
-                "{}::Context can only be derived on struct types",
-            ))
-        }
+        _ => return Err(Error::new_spanned(derive_input, "expected a struct data type")),
     };
     let mut field_and_index: Option<(usize, &syn::Field, &syn::Attribute)> = None;
     for (index, field) in data_struct.fields.iter().enumerate() {
@@ -102,12 +97,7 @@ pub fn find_field_attributes_in_struct<'a>(
 ) -> Result<Vec<MatchedAttribute<'a>>, Error> {
     let data_struct = match &derive_input.data {
         syn::Data::Struct(data_struct) => data_struct,
-        _ => {
-            return Err(Error::new_spanned(
-                derive_input,
-                "{}::Context can only be derived on struct types",
-            ))
-        }
+        _ => return Err(Error::new_spanned(derive_input, "expected a struct data type")),
     };
     let mut fields_and_indices = Vec::<(usize, &syn::Field, &syn::Attribute)>::default();
     for (index, field) in data_struct.fields.iter().enumerate() {
