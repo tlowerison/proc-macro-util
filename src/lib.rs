@@ -29,7 +29,7 @@ macro_rules! ok_or_return_compile_error {
 /// for by its path. Includes additional context about where the
 /// attribute is found within the struct.
 #[derive(Clone, Debug)]
-pub struct AttributeMathchedField<'a> {
+pub struct MatchedAttribute<'a> {
     /// The entire attribute which was matched for based on its path.
     pub attr: &'a syn::Attribute,
     /// The field on which the matched attribute is found.
@@ -46,7 +46,7 @@ pub struct AttributeMathchedField<'a> {
 pub fn find_field_attribute_in_struct<'a>(
     attr_path: &str,
     derive_input: &'a syn::DeriveInput,
-) -> Result<AttributeMathchedField<'a>, Error> {
+) -> Result<MatchedAttribute<'a>, Error> {
     let data_struct = match &derive_input.data {
         syn::Data::Struct(data_struct) => data_struct,
         _ => {
@@ -86,7 +86,7 @@ pub fn find_field_attribute_in_struct<'a>(
         None => TokenStream::from_str(&format!("{field_index}")).unwrap().into(),
     };
 
-    Ok(AttributeMathchedField {
+    Ok(MatchedAttribute {
         attr,
         field,
         field_accessor,
