@@ -239,3 +239,8 @@ pub fn bounds_union(
         }
     }
 }
+
+pub fn pretty(tokens: &TokenStream2) -> Result<String, Error> {
+    let syntax_tree = syn::parse_file(&format!("{tokens}"))?;
+    Ok(prettyplease::unparse(&syntax_tree))
+}
