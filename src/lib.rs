@@ -55,7 +55,7 @@ pub fn find_field_attribute_in_struct<'a>(
     let mut field_and_index: Option<(usize, &syn::Field, &syn::Attribute)> = None;
     for (index, field) in data_struct.fields.iter().enumerate() {
         for attr in &field.attrs {
-            if attr.path.is_ident(attr_path) {
+            if attr.path().is_ident(attr_path) {
                 if field_and_index.is_some() {
                     return Err(Error::new_spanned(
                         attr,
@@ -102,7 +102,7 @@ pub fn find_field_attributes_in_struct<'a>(
     let mut fields_and_indices = Vec::<(usize, &syn::Field, &syn::Attribute)>::default();
     for (index, field) in data_struct.fields.iter().enumerate() {
         for attr in &field.attrs {
-            if attr.path.is_ident(attr_path) {
+            if attr.path().is_ident(attr_path) {
                 fields_and_indices.push((index, field, attr));
             }
         }
@@ -206,7 +206,7 @@ pub fn add_bounds_to_generics(
 
 /// add bounds to an existing set of bounds while not adding any duplicates
 pub fn bounds_union(
-    bounds: &mut Punctuated<syn::TypeParamBound, syn::token::Add>,
+    bounds: &mut Punctuated<syn::TypeParamBound, syn::Token![+]>,
     bounds_to_add: impl IntoIterator<Item = syn::TypeParamBound> + Debug,
 ) {
     for bound_to_add in bounds_to_add {
